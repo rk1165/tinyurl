@@ -1,0 +1,1 @@
+DELETE FROM tinyurl_db.tiny_urls;
