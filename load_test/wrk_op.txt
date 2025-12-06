@@ -1,0 +1,26 @@
+Thread 0 initialized: will handle ~100000 URLs (total_threads=1)
+Thread 1 initialized: will handle ~50000 URLs (total_threads=2)
+Thread 2 initialized: will handle ~33334 URLs (total_threads=3)
+Thread 3 initialized: will handle ~25000 URLs (total_threads=4)
+Thread 4 initialized: will handle ~20000 URLs (total_threads=5)
+Thread 5 initialized: will handle ~16667 URLs (total_threads=6)
+Thread 6 initialized: will handle ~14286 URLs (total_threads=7)
+Thread 7 initialized: will handle ~12500 URLs (total_threads=8)
+Thread 8 initialized: will handle ~11112 URLs (total_threads=9)
+Thread 9 initialized: will handle ~10000 URLs (total_threads=10)
+Thread 10 initialized: will handle ~9091 URLs (total_threads=11)
+Thread 11 initialized: will handle ~8334 URLs (total_threads=12)
+
+Running 1m test @ http://localhost:8080
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    71.53ms   51.61ms 824.55ms   86.32%
+    Req/Sec   525.09    209.63     1.14k    66.40%
+  Latency Distribution
+     50%   56.79ms
+     75%   79.78ms
+     90%  130.13ms
+     99%  267.29ms
+  368471 requests in 1.00m, 52.78MB read
+Requests/sec:   6131.27
+Transfer/sec:      0.88MB

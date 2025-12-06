@@ -1,0 +1,4 @@
+ext {
+    swaggerVersion = "3.0.0"
+    springCloudVersion = "2025.1.0"
+}

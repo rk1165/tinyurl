@@ -8,6 +8,8 @@ group = 'com'
 version = '0.0.1-SNAPSHOT'
 description = 'tinyurl'
 
+apply from: "versions.gradle"
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -22,10 +24,6 @@ configurations {
 
 repositories {
     mavenCentral()
-}
-
-ext {
-    set('springCloudVersion', "2025.1.0")
 }
 
 dependencies {
@@ -48,6 +46,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:$swaggerVersion"
 }
 
 dependencyManagement {

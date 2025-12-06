@@ -26,14 +26,9 @@ public class KeyFetchingService {
 
         String uri = "/api/v1/snowflake/next";
 
-        // 1. Specify the method (GET)
         return webClient.get()
-                // 2. Specify the URI
                 .uri(uri)
-                // 3. Retrieve the response
                 .retrieve()
-                // 4. Convert the response body to a String and block the thread until response is received.
-                // In a blocking environment (like a typical MVC controller), block() is necessary.
                 .bodyToMono(SnowflakeId.class)
                 .block();
     }
