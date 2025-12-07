@@ -2,7 +2,9 @@ package com.tinyurl.controller;
 
 import com.tinyurl.model.Request;
 import com.tinyurl.repository.UrlRepository;
+import com.tinyurl.service.ClickTrackingService;
 import com.tinyurl.service.KeyFetchingService;
+import com.tinyurl.service.UrlCacheService;
 import com.tinyurl.utils.Base62Encoder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,8 @@ public class TinyUrlController {
     private final Base62Encoder base62Encoder;
     private final KeyFetchingService keyFetchingService;
     private final UrlRepository urlRepository;
+    private final UrlCacheService urlCacheService;
+    private final ClickTrackingService clickTrackingService;
 
     @PostMapping("/shorten")
     public ResponseEntity<?> post(@RequestBody Request request) {
@@ -43,6 +47,8 @@ public class TinyUrlController {
         boolean inserted = urlRepository.save(shortUrl, longUrl);
         // if inserted, return the shortened url to the caller
         if (inserted) {
+            // Pre-populate cache so first lookup is also a cache hit
+            urlCacheService.put(shortUrl, longUrl);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
                     .body(Map.of("shortUrl", shortUrl));
@@ -58,15 +64,26 @@ public class TinyUrlController {
 
     @GetMapping("/{shortUrl}")
     public ResponseEntity<?> get(@PathVariable("shortUrl") String shortUrl) {
-        // TODO : First check if the shortURL is present in Cache. If it is return from Cache
-//        log.info("Fetching shortUrl={}", shortUrl);
-        // If it's not call the DB and update. Use LRU
-        // calls the DB and looks up the value of the short url and returns the response
-        String longUrl = urlRepository.incrementAndGetLongUrl(shortUrl);
-        if (longUrl == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        // 1. First check cache (Redis)
+        String longUrl = urlCacheService.get(shortUrl);
+        
+        if (longUrl != null) {
+            // Cache HIT - track click in Redis (batched, flushed to DB periodically)
+            clickTrackingService.incrementInRedis(shortUrl);
+            return ResponseEntity
+                    .status(HttpStatus.OK)
+                    .body(Map.of("longUrl", longUrl));
         }
-        // also increment the count
+        
+        // 2. Cache MISS - fetch from DB (this also increments click count)
+        longUrl = urlRepository.incrementAndGetLongUrl(shortUrl);
+        if (longUrl == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("shortUrl %s not found",  shortUrl));
+        }
+        
+        // 3. Populate cache for future requests
+        urlCacheService.put(shortUrl, longUrl);
+        
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(Map.of("longUrl", longUrl));
