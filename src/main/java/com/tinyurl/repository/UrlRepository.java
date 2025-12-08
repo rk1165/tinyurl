@@ -55,7 +55,7 @@ public class UrlRepository {
      * @param longUrl  url for which the encoding was done
      */
     public boolean save(String shortUrl, String longUrl) {
-        log.info("saving shortUrl={}, longUrl={}", shortUrl, longUrl);
+        log.debug("saving shortUrl={}, longUrl={}", shortUrl, longUrl);
         int rowsAffected = jdbcTemplate.update(ApplicationConstants.INSERT_URLS, shortUrl, longUrl);
         return rowsAffected == 1;
     }
@@ -68,7 +68,7 @@ public class UrlRepository {
      * @throws DataAccessException if any Spring-related database error occurs.
      */
     public String findShortUrlByLongUrl(String longUrl) throws DataAccessException {
-        log.info("Checking if longUrl={} is already present", longUrl);
+        log.debug("Checking if longUrl={} is already present", longUrl);
         try {
             return jdbcTemplate.queryForObject(SEARCH_LONG_URL, String.class, longUrl);
         } catch (EmptyResultDataAccessException e) {

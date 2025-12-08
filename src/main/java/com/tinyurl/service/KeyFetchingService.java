@@ -22,7 +22,7 @@ public class KeyFetchingService {
     }
 
     public SnowflakeId getNextId() {
-        log.info("Getting next id for url={}", baseUrl);
+        log.debug("Getting next id from Snowflake service");
 
         String uri = "/api/v1/snowflake/next";
 

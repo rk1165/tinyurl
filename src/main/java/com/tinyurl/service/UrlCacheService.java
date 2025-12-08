@@ -9,13 +9,13 @@ import java.time.Duration;
 
 /**
  * Caching service for TinyURL mappings using Redis.
- * 
+ * <p>
  * Strategy:
  * - Cache key format: "url:{shortUrl}" → longUrl
  * - TTL: 24 hours (configurable)
  * - On cache hit: Refresh TTL (keeps hot URLs in cache longer)
  * - On cache miss: Fetch from DB, populate cache
- * 
+ * <p>
  * Why this strategy works for TinyURL:
  * 1. URL mappings are IMMUTABLE - once created, shortUrl→longUrl never changes
  * 2. Read-heavy workload - lookups far exceed writes (typically 100:1 or more)
@@ -29,7 +29,7 @@ import java.time.Duration;
 public class UrlCacheService {
 
     private static final String CACHE_KEY_PREFIX = "url:";
-    
+
     private final StringRedisTemplate redisTemplate;
     private final Duration cacheTtl;
 
@@ -43,7 +43,7 @@ public class UrlCacheService {
     public String get(String shortUrl) {
         String key = CACHE_KEY_PREFIX + shortUrl;
         String longUrl = redisTemplate.opsForValue().get(key);
-        
+
         if (longUrl != null) {
             // Refresh TTL on access - hot URLs stay in cache
             redisTemplate.expire(key, cacheTtl);
@@ -51,7 +51,7 @@ public class UrlCacheService {
         } else {
             log.debug("Cache MISS for shortUrl={}", shortUrl);
         }
-        
+
         return longUrl;
     }
 
