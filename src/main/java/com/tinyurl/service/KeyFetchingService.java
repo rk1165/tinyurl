@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.Duration;
+
 import static com.tinyurl.ApplicationConstants.SNOWFLAKE_NEXT_ID_URL;
 
 @Service
@@ -16,6 +18,9 @@ public class KeyFetchingService {
     @Value("${snowflake.generator.baseUrl}")
     private String baseUrl;
 
+    @Value("${snowflake.generator.timeout-ms:5000}")
+    private int timeoutMs;
+
     private final WebClient.Builder webClientBuilder;
     private WebClient webClient;
 
@@ -24,9 +29,10 @@ public class KeyFetchingService {
     }
 
     /**
-     * Calls the ID generator's /next endpoint
+     * Calls the ID generator's /next endpoint with timeout.
      *
      * @return a snowflake id
+     * @throws RuntimeException if the service is unavailable or times out
      */
     public SnowflakeId getNextId() {
         log.debug("Getting next id from Snowflake service");
@@ -35,6 +41,7 @@ public class KeyFetchingService {
                 .uri(SNOWFLAKE_NEXT_ID_URL)
                 .retrieve()
                 .bodyToMono(SnowflakeId.class)
+                .timeout(Duration.ofMillis(timeoutMs))
                 .block();
     }
 

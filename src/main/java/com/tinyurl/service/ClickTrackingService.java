@@ -47,7 +47,7 @@ public class ClickTrackingService {
         Set<String> keys = redisTemplate.keys(CLICK_COUNT_KEY_PREFIX + "*");
 
         if (keys == null || keys.isEmpty()) {
-            log.warn("No redis click count found.");
+            log.warn("No pending click counts to flush");
             return;
         }
 

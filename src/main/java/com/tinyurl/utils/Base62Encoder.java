@@ -22,7 +22,7 @@ public class Base62Encoder {
      * @throws IllegalArgumentException if the value is negative.
      */
     public String encode(long value) {
-        log.info("Encoding value={}", value);
+        log.debug("Encoding value={}", value);
         if (value < 0) {
             throw new IllegalArgumentException("Value must be non-negative.");
         }

@@ -6,11 +6,17 @@ import com.tinyurl.service.ClickTrackingService;
 import com.tinyurl.service.KeyFetchingService;
 import com.tinyurl.service.UrlCacheService;
 import com.tinyurl.utils.Base62Encoder;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
@@ -30,13 +36,14 @@ public class TinyUrlController {
     private final ClickTrackingService clickTrackingService;
 
     @PostMapping("/shorten")
-    public ResponseEntity<?> post(@RequestBody Request request) {
+    public ResponseEntity<?> post(@Valid @RequestBody Request request) {
         String longUrl = request.getLongUrl();
         log.info("Received request for longUrl={}", longUrl);
+
         // check if it already exists in the DB
         String existingShortUrl = urlRepository.findShortUrlByLongUrl(longUrl);
         if (existingShortUrl != null) {
-            log.info("Existing shortUrl={}", existingShortUrl);
+            log.info("Found existing shortUrl={}", existingShortUrl);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(Map.of("shortUrl", existingShortUrl));
@@ -48,12 +55,12 @@ public class TinyUrlController {
         // calls base62encoder's encode method to get a short url
         String shortUrl = base62Encoder.encode(id);
 
-        // save the url in the db
+        // save the url in db
         boolean inserted = urlRepository.save(shortUrl, longUrl);
 
         // if inserted, return the shortened url to the caller
         if (inserted) {
-            // Pre-populate cache so first lookup is also a cache hit
+            // Pre-populate cache for first lookup
             urlCacheService.put(shortUrl, longUrl);
             return ResponseEntity
                     .status(HttpStatus.CREATED)
@@ -74,7 +81,7 @@ public class TinyUrlController {
                 if (finalShortUrl == null) {
                     try {
                         attempts++;
-                        Thread.sleep(50);
+                        Thread.sleep(50L * attempts);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
@@ -108,19 +115,22 @@ public class TinyUrlController {
         longUrl = urlRepository.incrementAndGetLongUrl(shortUrl);
 
         if (longUrl == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("shortUrl %s not found", shortUrl));
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    String.format("Short URL '%s' not found", shortUrl));
         }
 
         // Populate the cache for future requests - Cache Aside Pattern
         urlCacheService.put(shortUrl, longUrl);
 
-        // Return 301 / 302 depending on requirements. I am returning 200 OK for now.
+        // I am returning 200 OK for now.
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(Map.of("longUrl", longUrl));
-//                .status(HttpStatus.FOUND)
-//                .header("Location", longUrl)
-//                .build();
+        // Return 301 / 302 depending on actual requirement
+        /* return ResponseEntity
+                .status(HttpStatus.FOUND)
+                .header("Location", longUrl)
+                .build();*/
     }
 
 }
