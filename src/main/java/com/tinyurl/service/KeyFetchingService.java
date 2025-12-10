@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import static com.tinyurl.ApplicationConstants.SNOWFLAKE_NEXT_ID_URL;
+
 @Service
 @Slf4j
 public class KeyFetchingService {
@@ -21,13 +23,16 @@ public class KeyFetchingService {
         this.webClientBuilder = webClientBuilder;
     }
 
+    /**
+     * Calls the ID generator's /next endpoint
+     *
+     * @return a snowflake id
+     */
     public SnowflakeId getNextId() {
         log.debug("Getting next id from Snowflake service");
 
-        String uri = "/api/v1/snowflake/next";
-
         return webClient.get()
-                .uri(uri)
+                .uri(SNOWFLAKE_NEXT_ID_URL)
                 .retrieve()
                 .bodyToMono(SnowflakeId.class)
                 .block();

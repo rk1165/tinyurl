@@ -10,12 +10,10 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import java.time.Duration;
 
 /**
- * Redis configuration for TinyURL caching.
- * <p>
- * Cache Strategy for TinyURL:
- * - TTL: 24 hours (URLs are immutable, but we refresh on access for hot URLs)
- * - Eviction: LRU (Least Recently Used) - configure in Redis with maxmemory-policy
- * - Pattern: Cache-Aside with TTL refresh on read hits
+ * <p> Cache Strategy for TinyURL:
+ * <p>- TTL: 24 hours (URLs are immutable, but we refresh on access for hot URLs)
+ * <p>- Eviction: LRU (Least Recently Used) - configure in Redis with maxmemory-policy
+ * <p>- Pattern: Cache-Aside with TTL refresh on read hits
  */
 @Configuration
 public class RedisConfig {

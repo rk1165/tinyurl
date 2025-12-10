@@ -97,6 +97,11 @@ Which HTTP status code should we return when a user clicks the short link?
 - If we used only database for looking up the long url it can increase the latency and load on our DB.
 - Since URLs don't change often, we can cache them and introduce Redis check before hitting the DB.
 - We can use **LRU (Least Recently User)** algorithm for eviction policy.
+- To use LRU we have to add the following in our `redis.conf` file
+```redis
+maxmemory 1gb
+maxmemory-policy allkeys-lru
+```
 
 #### Optimization
 
@@ -135,20 +140,19 @@ Which HTTP status code should we return when a user clicks the short link?
 - Below are the insertion load stats
 
 ```
-Running 1m test @ http://localhost:8080
+Running 40s test @ http://localhost:8080
   12 threads and 200 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency    45.20ms   53.88ms 704.22ms   89.57%
-    Req/Sec   511.62    294.49     1.51k    61.01%
+    Latency    52.60ms   48.45ms 478.36ms   83.48%
+    Req/Sec   388.57    228.04     1.12k    65.06%
   Latency Distribution
-     50%   26.25ms
-     75%   48.30ms
-     90%  103.75ms
-     99%  251.02ms
-  350869 requests in 1.00m, 50.26MB read
-  Non-2xx or 3xx responses: 26
-Requests/sec:   5838.18
-Transfer/sec:    856.33KB
+     50%   39.06ms
+     75%   59.59ms
+     90%  119.22ms
+     99%  226.48ms
+  179087 requests in 40.10s, 25.65MB read
+Requests/sec:   4465.91
+Transfer/sec:    655.01KB
 ```
 
 Following are the load stats when reading the short url 
@@ -233,15 +237,4 @@ Transfer/sec:      3.47MB
 
 ### Remarks
 
-- I have a suspicion that there might be some Race Condition happening in the shortening API endpoint when two threads
-  are trying to insert the same URL because I saw the following Exception few times when performing the load test.
-- If someone figures it out kindly let me know.
-
-```java
-2025-12-08 22:34:21.612 [tomcat-handler-161] ERROR o.a.c.c.C.[.[.[.[dispatcherServlet] - Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.NullPointerException] with root cause
-java.lang.NullPointerException: null
-at java.base/java.util.Objects.requireNonNull(Objects.java:233)
-at java.base/java.util.ImmutableCollections$Map1.<init>(ImmutableCollections.java:1112)
-at java.base/java.util.Map.of(Map.java:1365)
-at com.tinyurl.controller.TinyUrlController.post(TinyUrlController.java:61)
-```
+- 

@@ -7,28 +7,30 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
+import static com.tinyurl.ApplicationConstants.CACHE_KEY_PREFIX;
+
 /**
- * Caching service for TinyURL mappings using Redis.
- * <p>
  * Strategy:
- * - Cache key format: "url:{shortUrl}" → longUrl
- * - TTL: 24 hours (configurable)
- * - On cache hit: Refresh TTL (keeps hot URLs in cache longer)
- * - On cache miss: Fetch from DB, populate cache
- * <p>
+ * <ul>
+ *  <li>Cache key format: "url:{shortUrl}" → longUrl</li>
+ *  <li>TTL: 24 hours (configurable)</li>
+ *  <li>On cache hit: Refresh TTL (keeps hot URLs in cache longer)</li>
+ *  <li>On cache miss: Fetch from DB, populate cache</li>
+ * </ul>
  * Why this strategy works for TinyURL:
- * 1. URL mappings are IMMUTABLE - once created, shortUrl→longUrl never changes
- * 2. Read-heavy workload - lookups far exceed writes (typically 100:1 or more)
- * 3. Long-tail distribution - some URLs are very hot, most are rarely accessed
- * 4. TTL refresh on access ensures popular URLs stay cached indefinitely
- * 5. Cold URLs naturally expire, freeing memory for hot ones
+ * <ol>
+ *   <li>URL mappings are IMMUTABLE - once created, shortUrl→longUrl never changes</li>
+ *   <li>Read-heavy workload - lookups far exceed writes (typically 100:1 or more)</li>
+ *   <li>Long-tail distribution - some URLs are very hot, most are rarely accessed</li>
+ *   <li>TTL refresh on access ensures popular URLs stay cached indefinitely</li>
+ *   <li>Cold URLs naturally expire, freeing memory for hot ones</li>
+ * </ol>
  */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class UrlCacheService {
 
-    private static final String CACHE_KEY_PREFIX = "url:";
 
     private final StringRedisTemplate redisTemplate;
     private final Duration cacheTtl;

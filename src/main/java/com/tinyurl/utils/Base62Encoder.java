@@ -34,8 +34,6 @@ public class Base62Encoder {
             value /= BASE;
         }
 
-        // The loop builds the string in reverse order (least significant digit first),
-        // so we reverse it to get the correct Base62 representation.
         return sb.reverse().toString();
     }
 

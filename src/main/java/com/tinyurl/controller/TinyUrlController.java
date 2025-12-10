@@ -15,6 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
+import static com.tinyurl.ApplicationConstants.MAX_RETRIES;
+
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/tinyurl")
@@ -39,12 +41,16 @@ public class TinyUrlController {
                     .status(HttpStatus.OK)
                     .body(Map.of("shortUrl", existingShortUrl));
         }
-        // calls the KGS nextId endpoint and get an ID
+
+        // if it doesn't exist in the DB, call the KGS nextId endpoint and get an ID
         long id = keyFetchingService.getNextId().getId();
+
         // calls base62encoder's encode method to get a short url
         String shortUrl = base62Encoder.encode(id);
+
         // save the url in the db
         boolean inserted = urlRepository.save(shortUrl, longUrl);
+
         // if inserted, return the shortened url to the caller
         if (inserted) {
             // Pre-populate cache so first lookup is also a cache hit
@@ -53,9 +59,32 @@ public class TinyUrlController {
                     .status(HttpStatus.CREATED)
                     .body(Map.of("shortUrl", shortUrl));
         } else {
-            log.warn("Race condition detected and handled gracefully for longUrl={}.", longUrl);
-            String finalShortUrl = urlRepository.findShortUrlByLongUrl(longUrl);
+            // This can happen if two threads tried to insert the same url and one inserted it and the other didn't.
+            // But now there is a possibility of race condition here
+            // Suppose thread T1 and T2 tried inserting the same URL. T1 succeeded and T2 didn't.
+            // T2 will try to look the value of longUrl thinking it's already inserted in the DB
+            // But now suppose T1 hasn't committed the transaction yet, which will result in T2 returning null
+            // To fix this we can add a retry mechanism
 
+            log.warn("Race condition detected for longUrl={}. Handling gracefully...", longUrl);
+            String finalShortUrl = null;
+            int attempts = 0;
+            while (finalShortUrl == null && attempts < MAX_RETRIES) {
+                finalShortUrl = urlRepository.findShortUrlByLongUrl(longUrl);
+                if (finalShortUrl == null) {
+                    try {
+                        attempts++;
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+            if (finalShortUrl == null) {
+                log.error("Failed to retrieve shortUrl for existing longUrl={} after maximum retries", longUrl);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            }
+            log.debug("Found existing shortUrl={} for longUrl={}", finalShortUrl, longUrl);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(Map.of("shortUrl", finalShortUrl));
@@ -64,26 +93,28 @@ public class TinyUrlController {
 
     @GetMapping("/{shortUrl}")
     public ResponseEntity<?> get(@PathVariable("shortUrl") String shortUrl) {
-        // 1. First check cache (Redis)
+        // First check the cache
         String longUrl = urlCacheService.get(shortUrl);
-        
+
+        // On Cache HIT - track click_count in Redis
         if (longUrl != null) {
-            // Cache HIT - track click in Redis (batched, flushed to DB periodically)
             clickTrackingService.incrementInRedis(shortUrl);
             return ResponseEntity
                     .status(HttpStatus.OK)
                     .body(Map.of("longUrl", longUrl));
         }
-        
-        // 2. Cache MISS - fetch from DB (this also increments click count)
+
+        // On Cache MISS - fetch from DB (this also increments click count)
         longUrl = urlRepository.incrementAndGetLongUrl(shortUrl);
+
         if (longUrl == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("shortUrl %s not found",  shortUrl));
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("shortUrl %s not found", shortUrl));
         }
-        
-        // 3. Populate cache for future requests
+
+        // Populate the cache for future requests - Cache Aside Pattern
         urlCacheService.put(shortUrl, longUrl);
-        
+
+        // Return 301 / 302 depending on requirements. I am returning 200 OK for now.
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(Map.of("longUrl", longUrl));

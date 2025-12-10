@@ -28,21 +28,20 @@ public class UrlRepository {
      */
     @Transactional
     public String incrementAndGetLongUrl(String shortUrl) {
-        // 1. Attempt to increment the click count first.
-        // We use the return value to check if the row actually exists.
+        // Try to increment the click count first.
+        // if any row gets updated rowsUpdated will not be 0
         int rowsUpdated = jdbcTemplate.update(ApplicationConstants.UPDATE_CLICK, shortUrl);
 
-        // If no rows were updated, the short_url is invalid/does not exist.
+        // If no rows were updated, the short_url does not exist.
         if (rowsUpdated == 0) {
             return null;
         }
 
-        // 2. Since the row exists, fetch the long_url.
+        // Since the row exists, fetch the long_url.
         try {
             return jdbcTemplate.queryForObject(ApplicationConstants.SELECT_LONG_URL, String.class, shortUrl);
         } catch (EmptyResultDataAccessException e) {
-            // This is unlikely to happen given the rowsUpdated check, 
-            // but good for safety.
+            // This is unlikely to happen given the rowsUpdated check but good for safety.
             return null;
         }
     }
@@ -56,6 +55,7 @@ public class UrlRepository {
      */
     public boolean save(String shortUrl, String longUrl) {
         log.debug("saving shortUrl={}, longUrl={}", shortUrl, longUrl);
+        // Returns 0 if unable to insert
         int rowsAffected = jdbcTemplate.update(ApplicationConstants.INSERT_URLS, shortUrl, longUrl);
         return rowsAffected == 1;
     }
