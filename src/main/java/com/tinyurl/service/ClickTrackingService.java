@@ -1,5 +1,6 @@
 package com.tinyurl.service;
 
+import com.tinyurl.metrics.TimedOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -29,6 +30,7 @@ public class ClickTrackingService {
     /**
      * Counts are batched and periodically flushed to DB.
      */
+    @TimedOperation("incrementInRedis")
     public void incrementInRedis(String shortUrl) {
         String key = CLICK_COUNT_KEY_PREFIX + shortUrl;
         redisTemplate.opsForValue().increment(key);
@@ -42,6 +44,7 @@ public class ClickTrackingService {
      * This batches potentially thousands of individual clicks into
      * a single DB update per URL, dramatically reducing DB load.
      */
+    @TimedOperation("flushClicksToDB")
     @Scheduled(fixedRateString = "${click.flush.interval-ms:60000}")
     public void flushClicksToDB() {
         Set<String> keys = redisTemplate.keys(CLICK_COUNT_KEY_PREFIX + "*");

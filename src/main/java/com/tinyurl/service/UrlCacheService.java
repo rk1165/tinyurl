@@ -1,5 +1,6 @@
 package com.tinyurl.service;
 
+import com.tinyurl.metrics.TimedOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -42,6 +43,7 @@ public class UrlCacheService {
      * @param shortUrl the short URL code
      * @return the long URL if cached, null otherwise
      */
+    @TimedOperation("redis.get")
     public String get(String shortUrl) {
         String key = CACHE_KEY_PREFIX + shortUrl;
         String longUrl = redisTemplate.opsForValue().get(key);
@@ -63,6 +65,7 @@ public class UrlCacheService {
      * @param shortUrl the short URL code
      * @param longUrl  the original long URL
      */
+    @TimedOperation("redis.put")
     public void put(String shortUrl, String longUrl) {
         String key = CACHE_KEY_PREFIX + shortUrl;
         redisTemplate.opsForValue().set(key, longUrl, cacheTtl);

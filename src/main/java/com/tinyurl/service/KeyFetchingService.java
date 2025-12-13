@@ -1,5 +1,6 @@
 package com.tinyurl.service;
 
+import com.tinyurl.metrics.TimedOperation;
 import com.tinyurl.model.SnowflakeId;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
@@ -34,6 +35,7 @@ public class KeyFetchingService {
      * @return a snowflake id
      * @throws RuntimeException if the service is unavailable or times out
      */
+    @TimedOperation("getNextId")
     public SnowflakeId getNextId() {
         log.debug("Getting next id from Snowflake service");
 

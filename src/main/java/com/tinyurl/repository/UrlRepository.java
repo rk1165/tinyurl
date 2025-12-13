@@ -1,6 +1,7 @@
 package com.tinyurl.repository;
 
 import com.tinyurl.ApplicationConstants;
+import com.tinyurl.metrics.TimedOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -27,6 +28,7 @@ public class UrlRepository {
      * @return The long_url if found, or null if the short_url does not exist.
      */
     @Transactional
+    @TimedOperation("incrementAndGetLongUrl")
     public String incrementAndGetLongUrl(String shortUrl) {
         // Try to increment the click count first.
         // if any row gets updated rowsUpdated will not be 0
@@ -53,6 +55,7 @@ public class UrlRepository {
      * @param shortUrl encoded url
      * @param longUrl  url for which the encoding was done
      */
+    @TimedOperation("save")
     public boolean save(String shortUrl, String longUrl) {
         log.debug("saving shortUrl={}, longUrl={}", shortUrl, longUrl);
         // Returns 0 if unable to insert
@@ -67,6 +70,7 @@ public class UrlRepository {
      * @return shortUrl if the long URL is present, null otherwise.
      * @throws DataAccessException if any Spring-related database error occurs.
      */
+    @TimedOperation("findShortUrlByLongUrl")
     public String findShortUrlByLongUrl(String longUrl) throws DataAccessException {
         log.debug("Checking if longUrl={} is already present", longUrl);
         try {

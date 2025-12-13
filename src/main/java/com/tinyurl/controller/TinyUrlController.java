@@ -1,5 +1,6 @@
 package com.tinyurl.controller;
 
+import com.tinyurl.metrics.TimedOperation;
 import com.tinyurl.model.Request;
 import com.tinyurl.repository.UrlRepository;
 import com.tinyurl.service.ClickTrackingService;
@@ -36,6 +37,7 @@ public class TinyUrlController {
     private final ClickTrackingService clickTrackingService;
 
     @PostMapping("/shorten")
+    @TimedOperation("post")
     public ResponseEntity<?> post(@Valid @RequestBody Request request) {
         String longUrl = request.getLongUrl();
         log.info("Received request for longUrl={}", longUrl);
@@ -99,6 +101,7 @@ public class TinyUrlController {
     }
 
     @GetMapping("/{shortUrl}")
+    @TimedOperation("get")
     public ResponseEntity<?> get(@PathVariable("shortUrl") String shortUrl) {
         // First check the cache
         String longUrl = urlCacheService.get(shortUrl);
